@@ -28,8 +28,15 @@ const Chat = () => {
   const [error, setError] = useState("");
   const messageEndRef = useRef(null);
   const token = JSON.parse(localStorage.getItem("authData")).token;
+  const domain = process.env.REACT_APP_API_BASE_URL;
+
+  // const socket = new WebSocket(
+  //   `ws://localhost:5000/?token=${
+  //     JSON.parse(localStorage.getItem("authData"))?.token
+  //   }`
+  // );
   const socket = new WebSocket(
-    `ws://localhost:5000/?token=${
+    `ws://${process.env.REACT_APP_API_BASE_URL.replace("http://", "")}/?token=${
       JSON.parse(localStorage.getItem("authData"))?.token
     }`
   );
@@ -48,7 +55,7 @@ const Chat = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/users");
+        const res = await axios.get(`${domain}/users`);
         let user = JSON.parse(localStorage.getItem("authData")).username;
         let users = res.data.filter((u) => u.username !== user);
         setUsers(users);
@@ -90,7 +97,7 @@ const Chat = () => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await axios.post("http://localhost:5000/upload", formData);
+    const res = await axios.post(`${domain}/upload`, formData);
     const filePath = res.data.filePath;
     setFile(filePath);
     // const msg = { token, receiverId, message: message, file: filePath };
@@ -100,7 +107,7 @@ const Chat = () => {
   // useEffect(() => {
   //   messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   // }, [messages]);
-  let domain = window.location.origin;
+
   return (
     <Container maxWidth="sm">
       <Typography variant="h4" component="h1" gutterBottom>
@@ -189,7 +196,7 @@ const Chat = () => {
                     <Typography>{msg.message}</Typography>
                     {msg.file && (
                       <Link
-                        href={`http://localhost:5000${msg.file}`}
+                        href={domain + msg.file}
                         target="_blank"
                         rel="noopener noreferrer"
                       >

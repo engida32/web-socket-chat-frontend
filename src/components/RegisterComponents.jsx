@@ -44,8 +44,8 @@ const SignUp = () => {
         password,
       })
       .then((res) => {
-        navigate("/");
         toast.success("Registered successfully");
+        navigate("/");
       })
       .catch((err) => {
         toast.error(err.response?.data?.error ?? "An error occurred");
