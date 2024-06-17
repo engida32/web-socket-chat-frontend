@@ -39,7 +39,7 @@ const SignUp = () => {
   // implement the login with axios
   const handleRegister = () => {
     axios
-      .post(`${process.env.REACT_APP_API_BASE_URL}/users`, {
+      .post(`${process.env.REACT_APP_API_BASE_URL}/register`, {
         username: name,
         password,
       })
@@ -228,7 +228,7 @@ const SignUp = () => {
             !password || !name || name.includes(" ") || password.length < 6
           }
         >
-          Sign in
+          Sign up
         </Button>
         <Button
           sx={{
