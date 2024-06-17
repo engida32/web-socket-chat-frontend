@@ -18,10 +18,11 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
-const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NjZlMWMzM2I0YzJiZTA4Yzk4YmEyYTIiLCJ1c2VybmFtZSI6InRlc3QiLCJpYXQiOjE3MTg1MDE3MzgsImV4cCI6MTcxODUwNTMzOH0.2HCq51pD5JoTeZ9F5SuIPDH4FyLvkszwbnWT_Cs0m6c";
-
-const socket = new WebSocket(`ws://localhost:5000/?token=${token}`);
+const socket = new WebSocket(
+  `ws://localhost:5000/?token=${
+    JSON.parse(localStorage.getItem("authData")).token
+  }`
+);
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -31,17 +32,19 @@ const Chat = () => {
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
   const messageEndRef = useRef(null);
+  const token = JSON.parse(localStorage.getItem("authData")).token;
 
-  // useEffect(() => {
-  socket.onmessage = (event: any) => {
-    console.log(event);
-    const data = JSON.parse(event.data);
-    if (Array.isArray(data)) {
-      setMessages(data);
-    } else {
-      setMessages((prevMessages) => [...prevMessages, data]);
-    }
-  };
+  useEffect(() => {
+    socket.onmessage = (event: any) => {
+      console.log(event);
+      const data = JSON.parse(event.data);
+      if (Array.isArray(data)) {
+        setMessages(data);
+      } else {
+        setMessages((prevMessages) => [...prevMessages, data]);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -95,10 +98,10 @@ const Chat = () => {
     // socket.send(JSON.stringify(msg));
   };
 
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
+  // useEffect(() => {
+  //   messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // }, [messages]);
+  let domain = window.location.origin;
   return (
     <Container maxWidth="sm">
       <Typography variant="h4" component="h1" gutterBottom>
@@ -149,6 +152,23 @@ const Chat = () => {
             Upload File
           </Button>
         </label>
+        {file && (
+          <Typography
+            sx={{
+              marginTop: 2,
+              wordWrap: "break-word",
+            }}
+          >
+            File uploaded:{" "}
+            <Link
+              href={domain + file}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {domain + file}
+            </Link>
+          </Typography>
+        )}
       </Paper>
       <Paper
         elevation={3}
