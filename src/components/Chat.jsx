@@ -29,6 +29,7 @@ const Chat = () => {
   const messageEndRef = useRef(null);
   const token = JSON.parse(localStorage.getItem("authData")).token;
   const domain = process.env.REACT_APP_API_BASE_URL;
+  const [refresh, setRefresh] = useState(false);
 
   // const socket = new WebSocket(
   //   `ws://localhost:5000/?token=${
@@ -50,7 +51,7 @@ const Chat = () => {
         setMessages((prevMessages) => [...prevMessages, data]);
       }
     };
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -73,7 +74,7 @@ const Chat = () => {
         setMessages((prevMessages) => [...prevMessages, data]);
       }
     };
-  }, [token]);
+  }, [token, refresh]);
 
   const handleSendMessage = () => {
     if (!receiverId || !message) {
@@ -85,6 +86,7 @@ const Chat = () => {
     socket.send(JSON.stringify(msg));
     setMessage("");
     setFile(null);
+    setRefresh(!refresh);
   };
 
   const handleFileUpload = async (e) => {
