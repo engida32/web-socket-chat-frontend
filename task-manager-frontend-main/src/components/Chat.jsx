@@ -47,7 +47,9 @@ const Chat = () => {
     const fetchUsers = async () => {
       try {
         const res = await axios.get("http://localhost:5000/users");
-        setUsers(res.data);
+        let user = JSON.parse(localStorage.getItem("authData")).username;
+        let users = res.data.filter((u) => u.username !== user);
+        setUsers(users);
       } catch (err) {
         setError("Failed to fetch users");
       }
