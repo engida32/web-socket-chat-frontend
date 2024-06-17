@@ -43,7 +43,7 @@ const NavBar = () => {
             },
           }}
         >
-          {JSON.parse(localStorage.getItem("authData"))?.user?.name}
+          {JSON.parse(localStorage.getItem("authData"))?.username}
         </Typography>
         <Button
           color="inherit"
