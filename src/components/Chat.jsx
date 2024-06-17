@@ -110,18 +110,25 @@ const Chat = () => {
 
   return (
     <Container maxWidth="sm">
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography
+        variant="h4"
+        component="h1"
+        gutterBottom
+        sx={{
+          my: 2,
+        }}
+      >
         Chat Application
       </Typography>
       <Paper elevation={3} sx={{ padding: 2, marginBottom: 2 }}>
         {error && <Alert severity="error">{error}</Alert>}
         <FormControl fullWidth variant="outlined" margin="normal">
-          <InputLabel id="receiver-label">Receiver</InputLabel>
+          <InputLabel id="receiver-label">Select Receiver</InputLabel>
           <Select
             labelId="receiver-label"
             value={receiverId}
             onChange={(e) => setReceiverId(e.target.value)}
-            label="Receiver"
+            label="receiver"
           >
             {users.map((user) => (
               <MenuItem key={user._id} value={user._id}>
