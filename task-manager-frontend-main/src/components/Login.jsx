@@ -32,20 +32,20 @@ const textStyles = {
 };
 
 const Login = () => {
-  const [email, setEmail] = React.useState("");
+  const [username, setUserName] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
   const navigate = useNavigate();
   const handleLogin = () => {
     axios
       .post(`${process.env.REACT_APP_API_BASE_URL}/auth/login`, {
-        email,
+        username,
         password,
       })
       .then((res) => {
         localStorage.setItem("authData", JSON.stringify(res.data));
-        navigate("/chat");
         toast.success("Login successful");
+        navigate("/chat");
       })
       .catch((err) => {
         toast.error(err.response?.data?.error ?? "An error occurred");
@@ -135,8 +135,8 @@ const Login = () => {
           <TextField
             variant="outlined"
             // value={"Adler"}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={username}
+            onChange={(e) => setUserName(e.target.value)}
             placeholder="johndoe@gmail.com"
             sx={{
               ...inputFieldStyle,
@@ -215,7 +215,7 @@ const Login = () => {
           }}
           // onClick={() => router.push("/dashboard")}
           onClick={handleLogin}
-          disabled={!email || !password}
+          disabled={!username || !password}
         >
           Sign in
         </Button>
