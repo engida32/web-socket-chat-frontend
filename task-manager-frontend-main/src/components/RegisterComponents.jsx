@@ -32,7 +32,6 @@ const textStyles = {
 };
 
 const SignUp = () => {
-  const [email, setEmail] = React.useState("");
   const [name, setName] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
@@ -41,9 +40,8 @@ const SignUp = () => {
   const handleRegister = () => {
     axios
       .post(`${process.env.REACT_APP_API_BASE_URL}/users`, {
-        email,
+        username: name,
         password,
-        name,
       })
       .then((res) => {
         navigate("/");
@@ -136,38 +134,18 @@ const SignUp = () => {
           </Typography>
           <TextField
             variant="outlined"
-            // value={"Adler"}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
+            placeholder="username"
             sx={{
               ...inputFieldStyle,
-              mb: 2,
             }}
           />
-
-          <Typography
-            sx={{
-              color: "#000",
-              fontFamily: "Ubuntu",
-              fontSize: "16px",
-              fontStyle: "normal",
-              fontWeight: 400,
-              lineHeight: "normal",
-            }}
-          >
-            Email
+          <Typography sx={{ color: "red", fontSize: "12px" }}>
+            {name.length > 0 &&
+              name.includes(" ") &&
+              "Username should not contain spaces"}
           </Typography>
-          <TextField
-            variant="outlined"
-            // value={"Adler"}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="johndoe@gmail.com"
-            sx={{
-              ...inputFieldStyle,
-            }}
-          />
         </Stack>{" "}
         <Stack
           sx={{
@@ -218,6 +196,11 @@ const SignUp = () => {
                       fill="#4B5563"
                     />
                   </svg>
+                  <Typography sx={{ color: "red", fontSize: "12px" }}>
+                    {password.length > 0 &&
+                      password.length < 6 &&
+                      "Password should be atleast 6 characters"}
+                  </Typography>
                 </Stack>
               ),
             }}
@@ -241,7 +224,9 @@ const SignUp = () => {
           }}
           // onClick={() => router.push("/dashboard")}
           onClick={handleRegister}
-          disabled={!email || !password || !name}
+          disabled={
+            !password || !name || name.includes(" ") || password.length < 6
+          }
         >
           Sign in
         </Button>

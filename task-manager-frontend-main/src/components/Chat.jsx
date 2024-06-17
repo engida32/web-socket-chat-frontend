@@ -18,11 +18,6 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
-const socket = new WebSocket(
-  `ws://localhost:5000/?token=${
-    JSON.parse(localStorage.getItem("authData")).token
-  }`
-);
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -33,7 +28,11 @@ const Chat = () => {
   const [error, setError] = useState("");
   const messageEndRef = useRef(null);
   const token = JSON.parse(localStorage.getItem("authData")).token;
-
+  const socket = new WebSocket(
+    `ws://localhost:5000/?token=${
+      JSON.parse(localStorage.getItem("authData"))?.token
+    }`
+  );
   useEffect(() => {
     socket.onmessage = (event: any) => {
       console.log(event);
@@ -67,7 +66,7 @@ const Chat = () => {
         setMessages((prevMessages) => [...prevMessages, data]);
       }
     };
-  }, []);
+  }, [token]);
 
   const handleSendMessage = () => {
     if (!receiverId || !message) {

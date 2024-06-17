@@ -101,7 +101,7 @@ const Login = () => {
               lineHeight: "20px",
             }}
           >
-            Enter your email and password to sign in
+            Enter your details to continue
           </Typography>
         </Stack>
       </Stack>
