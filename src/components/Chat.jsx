@@ -1,7 +1,9 @@
 "use client";
 import {
   Alert,
+  Box,
   Button,
+  CircularProgress,
   Container,
   FormControl,
   InputLabel,
@@ -30,17 +32,25 @@ const Chat = () => {
   const token = JSON.parse(localStorage.getItem("authData")).token;
   const domain = process.env.REACT_APP_API_BASE_URL;
   const [refresh, setRefresh] = useState(false);
-
+  const [loading, setLoading] = useState(false);
   // const socket = new WebSocket(
   //   `ws://localhost:5000/?token=${
   //     JSON.parse(localStorage.getItem("authData"))?.token
   //   }`
   // );
+  // const socket = new WebSocket(
+  //   `wss://${process.env.REACT_APP_API_BASE_URL.replace(
+  //     "https://",
+  //     ""
+  //   )}/?token=${JSON.parse(localStorage.getItem("authData"))?.token}`
+  // );
   const socket = new WebSocket(
-    `ws://${process.env.REACT_APP_API_BASE_URL.replace("http://", "")}/?token=${
-      JSON.parse(localStorage.getItem("authData"))?.token
-    }`
+    `wss://${process.env.REACT_APP_API_BASE_URL.replace(
+      "https://",
+      ""
+    )}/?token=${JSON.parse(localStorage.getItem("authData"))?.token}`
   );
+
   useEffect(() => {
     socket.onmessage = (event: any) => {
       console.log(event);
@@ -96,14 +106,20 @@ const Chat = () => {
       return;
     }
     setError("");
+    setLoading(true);
+
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await axios.post(`${domain}/upload`, formData);
-    const filePath = res.data.filePath;
-    setFile(filePath);
-    // const msg = { token, receiverId, message: message, file: filePath };
-    // socket.send(JSON.stringify(msg));
+    try {
+      const res = await axios.post(`${domain}/upload`, formData);
+      setLoading(false);
+      const filePath = res.data.filePath;
+      setFile(filePath);
+    } catch (err) {
+      setLoading(false);
+      setError("Failed to upload file.");
+    }
   };
 
   // useEffect(() => {
@@ -147,26 +163,36 @@ const Chat = () => {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSendMessage}
-          sx={{ m: 1 }}
-          disabled={!receiverId || !message || !file}
-        >
-          Send
-        </Button>
-        <input
-          type="file"
-          style={{ display: "none" }}
-          id="upload-file"
-          onChange={handleFileUpload}
-        />
-        <label htmlFor="upload-file">
-          <Button variant="contained" component="span" sx={{ m: 2 }}>
-            Upload File
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSendMessage}
+            sx={{ m: 1 }}
+            disabled={!receiverId || !message || !file}
+          >
+            Send
           </Button>
-        </label>
+          <input
+            type="file"
+            style={{ display: "none" }}
+            id="upload-file"
+            onChange={handleFileUpload}
+          />
+          <label htmlFor="upload-file">
+            <Button
+              variant="contained"
+              component="span"
+              sx={{ m: 2 }}
+              disabled={loading}
+            >
+              Upload File
+            </Button>
+          </label>
+          {/* show loading indicator */}
+          {loading && <CircularProgress size={24} />}
+        </Box>
+
         {file && (
           <Typography
             sx={{
