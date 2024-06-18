@@ -19,7 +19,8 @@ import {
   Typography,
 } from "@mui/material";
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useDropzone } from "react-dropzone";
 
 const Chat = () => {
   const [messages, setMessages] = useState([]);
@@ -28,32 +29,33 @@ const Chat = () => {
   const [message, setMessage] = useState("");
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const messageEndRef = useRef(null);
   const token = JSON.parse(localStorage.getItem("authData")).token;
   const domain = process.env.REACT_APP_API_BASE_URL;
   const [refresh, setRefresh] = useState(false);
-  const [loading, setLoading] = useState(false);
-  // const socket = new WebSocket(
-  //   `ws://localhost:5000/?token=${
-  //     JSON.parse(localStorage.getItem("authData"))?.token
-  //   }`
-  // );
-  // const socket = new WebSocket(
-  //   `wss://${process.env.REACT_APP_API_BASE_URL.replace(
-  //     "https://",
-  //     ""
-  //   )}/?token=${JSON.parse(localStorage.getItem("authData"))?.token}`
-  // );
-  const socket = new WebSocket(
-    `wss://${process.env.REACT_APP_API_BASE_URL.replace(
-      "https://",
-      ""
-    )}/?token=${JSON.parse(localStorage.getItem("authData"))?.token}`
-  );
+  const [socketStatus, setSocketStatus] = useState("Connecting...");
+  const socket = useRef(null);
 
   useEffect(() => {
-    socket.onmessage = (event: any) => {
-      console.log(event);
+    socket.current = new WebSocket(
+      `wss://${domain.replace("https://", "")}/?token=${token}`
+    );
+
+    socket.current.onopen = () => {
+      setSocketStatus("Connected");
+    };
+
+    socket.current.onclose = () => {
+      setSocketStatus("Disconnected");
+    };
+
+    socket.current.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setSocketStatus("Error");
+    };
+
+    socket.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (Array.isArray(data)) {
         setMessages(data);
@@ -61,30 +63,31 @@ const Chat = () => {
         setMessages((prevMessages) => [...prevMessages, data]);
       }
     };
-  }, [refresh]);
+
+    return () => {
+      socket.current.close();
+    };
+  }, [token, domain]);
+
+  //retry connection if disconnected
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const res = await axios.get(`${domain}/users`);
-        let user = JSON.parse(localStorage.getItem("authData")).username;
-        let users = res.data.filter((u) => u.username !== user);
-        setUsers(users);
+        const currentUser = JSON.parse(
+          localStorage.getItem("authData")
+        ).username;
+        const filteredUsers = res.data.filter(
+          (user) => user.username !== currentUser
+        );
+        setUsers(filteredUsers);
       } catch (err) {
         setError("Failed to fetch users");
       }
     };
     fetchUsers();
-    socket.onmessage = (event) => {
-      console.log(event);
-      const data = JSON.parse(event.data);
-      if (Array.isArray(data)) {
-        setMessages(data);
-      } else {
-        setMessages((prevMessages) => [...prevMessages, data]);
-      }
-    };
-  }, [token, refresh]);
+  }, [domain]);
 
   const handleSendMessage = () => {
     if (!receiverId || !message) {
@@ -92,16 +95,16 @@ const Chat = () => {
       return;
     }
     setError("");
-    const msg = { token, receiverId, message, file: file };
-    socket.send(JSON.stringify(msg));
+    const msg = { token, receiverId, message, file };
+    socket.current.send(JSON.stringify(msg));
     setMessage("");
     setFile(null);
     setRefresh(!refresh);
   };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) {
+    const uploadedFile = e.target.files[0];
+    if (!uploadedFile) {
       setError("Please select a file to upload.");
       return;
     }
@@ -109,34 +112,45 @@ const Chat = () => {
     setLoading(true);
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", uploadedFile);
 
     try {
       const res = await axios.post(`${domain}/upload`, formData);
       setLoading(false);
-      const filePath = res.data.filePath;
-      setFile(filePath);
+      setFile(res.data.filePath);
     } catch (err) {
       setLoading(false);
       setError("Failed to upload file.");
     }
   };
 
-  // useEffect(() => {
-  //   messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  // }, [messages]);
+  const onDrop = useCallback((acceptedFiles) => {
+    if (acceptedFiles.length > 0) {
+      handleFileUpload({ target: { files: acceptedFiles } });
+    }
+  }, []);
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    multiple: false,
+    accept: "*",
+  });
 
   return (
     <Container maxWidth="sm">
+      <Typography variant="h4" component="h1" gutterBottom sx={{ my: 2 }}>
+        Chat Application
+      </Typography>
       <Typography
-        variant="h4"
-        component="h1"
+        variant="body1"
         gutterBottom
         sx={{
           my: 2,
+          color: socketStatus === "Connected" ? "green" : "red",
+          fontWeight: "bold",
         }}
       >
-        Chat Application
+        {socketStatus}
       </Typography>
       <Paper elevation={3} sx={{ padding: 2, marginBottom: 2 }}>
         {error && <Alert severity="error">{error}</Alert>}
@@ -146,7 +160,7 @@ const Chat = () => {
             labelId="receiver-label"
             value={receiverId}
             onChange={(e) => setReceiverId(e.target.value)}
-            label="receiver"
+            label="Receiver"
           >
             {users.map((user) => (
               <MenuItem key={user._id} value={user._id}>
@@ -160,70 +174,91 @@ const Chat = () => {
           variant="outlined"
           margin="normal"
           label="Message"
+          multiline
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSendMessage}
-            sx={{ m: 1 }}
-            disabled={!receiverId || !message || !file}
-          >
-            Send
-          </Button>
-          <input
-            type="file"
-            style={{ display: "none" }}
-            id="upload-file"
-            onChange={handleFileUpload}
-          />
-          <label htmlFor="upload-file">
-            <Button
-              variant="contained"
-              component="span"
-              sx={{ m: 2 }}
-              disabled={loading}
-            >
-              Upload File
-            </Button>
-          </label>
-          {/* show loading indicator */}
-          {loading && <CircularProgress size={24} />}
-        </Box>
-
-        {file && (
-          <Typography
-            sx={{
-              marginTop: 2,
-              wordWrap: "break-word",
+          <div
+            {...getRootProps()}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginLeft: "auto",
+              border: "1px dashed #ccc",
+              borderRadius: "5px",
+              width: "100%",
+              justifyContent: "center",
+              height: "150px",
             }}
           >
+            <input {...getInputProps()} />
+            <label htmlFor="upload-file">
+              <Button
+                variant="contained"
+                component="span"
+                disabled={loading}
+                sx={{
+                  m: 2,
+                  color: "white",
+                  backgroundColor: "green",
+                  "&:hover": {
+                    backgroundColor: "darkgreen",
+                  },
+                }}
+              >
+                Upload File
+              </Button>
+            </label>
+            <Typography variant="body2" sx={{ textAlign: "center" }}>
+              Drag and drop a file here or click to select a file.
+            </Typography>
+            {loading && <CircularProgress size={24} />}
+          </div>
+        </Box>
+        {file && (
+          <Typography sx={{ marginTop: 2, wordWrap: "break-word" }}>
             File uploaded:{" "}
             <Link
-              href={domain + file}
+              href={`${domain}${file}`}
               target="_blank"
               rel="noopener noreferrer"
             >
-              {domain + file}
+              {file}
             </Link>
           </Typography>
         )}
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSendMessage}
+          sx={{
+            m: 1,
+            backgroundColor: "green",
+            "&:hover": {
+              backgroundColor: "darkgreen",
+            },
+            padding: "10px 20px",
+          }}
+          disabled={
+            !receiverId || !message || !file || socketStatus !== "Connected"
+          }
+        >
+          Send
+        </Button>
       </Paper>
       <Paper
         elevation={3}
         sx={{ padding: 2, maxHeight: 400, overflow: "auto" }}
       >
         <List>
-          {messages?.map((msg, index) => (
+          {messages.map((msg, index) => (
             <ListItem key={index}>
               <ListItemText
                 primary={
                   <>
-                    <strong>{msg.sender.username}</strong> {">"}
-                    to {">"}
-                    <strong>{msg.receiver.username}:</strong>
+                    <strong>{msg.sender.username}</strong> {">"} to {">"}{" "}
+                    <strong>{msg.receiver.username}</strong>:
                   </>
                 }
                 secondary={
@@ -231,7 +266,7 @@ const Chat = () => {
                     <Typography>{msg.message}</Typography>
                     {msg.file && (
                       <Link
-                        href={domain + msg.file}
+                        href={`${domain}${msg.file}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
