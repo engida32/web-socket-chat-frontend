@@ -1,7 +1,7 @@
 <!-- write step by step to start the project  -->
 1. Clone the repository
 ```bash
-git clone git@github.com:engida32/chat-frontend.git
+git clone git@github.com:engida32/web-socket-chat-frontend.git
 ```
 2. Install the dependencies
 ```bash 
